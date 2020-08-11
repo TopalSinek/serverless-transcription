@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless trascription
+
+Parameters:
+  InputBucketName:
+    Type: String
+    Default: 'ai-transcribe-media-bucket'
+  TranscriptionBucketName:
+    Type: String
+    Default: 'ai-transcribe-transcription-bucket'
+
+Globals:
+  Function:
+    Timeout: 10
+
+Resources:
+  TranscriptionsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Ref TranscriptionBucketName
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 30
+            Status: Enabled
+      Tags:
+        - Key: Project
+          Value: serverless-transcription
+  MediaS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref InputBucketName
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 1
+            Status: Enabled
+      Tags:
+        - Key: Project
+          Value: serverless-transcription
+
+
+  TranscribeFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: transcriptionJobStartFunction/
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.7
+      MemorySize: 128
+      Tags:
+        Project: serverless-transcription
+      Environment:
+        Variables:
+          TRANSCRIPTIONS_OUTPUT_BUCKET: !Ref TranscriptionsBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref InputBucketName
+        - S3CrudPolicy:
+            BucketName: !Ref TranscriptionBucketName
+        - Statement:
+          - Effect: Allow
+            Resource: '*'
+            Action:
+              - transcribe:StartTranscriptionJob
+              - cloudwatch:GetMetricStatistics
+              - cloudwatch:ListMetrics
+      Events:
+        FileUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref MediaS3Bucket
+            Events: s3:ObjectCreated:*
+
+Outputs: 
+  S3OutputBucketName:
+    Description: Transcriber S3 bucket
+    Value: !Ref TranscriptionsBucket
+  S3InputBucketName:
+    Description: Media S3 bucket
+    Value: !Ref MediaS3Bucket
