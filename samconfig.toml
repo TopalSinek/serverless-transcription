@@ -8,5 +8,5 @@ s3_prefix = "serverless-transcription"
 region = "eu-west-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "InputBucketName=\"ai-transcribe-media-bucket\" TranscriptionBucketName=\"ai-transcribe-transcription-bucket\""
+parameter_overrides = "InputBucketName=\"ai-transcribe-media-bucket\" InputVideoBucketName=\"ai-transcribe-video-bucket\" TranscriptionBucketName=\"ai-transcribe-transcription-bucket\" EFSpath=\"/mnt/efs\" AccessPointARN=\"arn:aws:elasticfilesystem:eu-west-1:282230486176:access-point/fsap-0ac1c6e3350bb461c\" SecurityGroupIds=\"sg-05652aceeea3de3a1\" SubnetIDs=\"subnet-03225fb0acde6ca62,subnet-04a0d0122666266a1,subnet-0f3219b7659dc7653\""
 

@@ -7,7 +7,8 @@ import os
 import re
 import urllib.parse
 import uuid
-import moviepy.editor as mp
+import subprocess
+# import moviepy.editor as mp
 
 s3 = boto3.client('s3')
 transcribe = boto3.client('transcribe')
@@ -42,7 +43,7 @@ def lambda_handler(event, context):
     bucket_name = event['Records'][0]['s3']['bucket']['name']
     _object_key = event['Records'][0]['s3']['object']['key']
     object_key = urllib.parse.unquote_plus(_object_key)
-    uniqueId= uuid.uuid4()
+    uniqueId= str(uuid.uuid4())
     filenameWithoutExt = os.path.splitext(object_key)[0]
     soundFileName = f"{uniqueId}-sound-{filenameWithoutExt}"
     videoFileName = f"{uniqueId}-video-{object_key}"
@@ -61,8 +62,9 @@ def lambda_handler(event, context):
 
     s3.download_file(Bucket=bucket_name, Key=object_key, Filename=f"{efsPath}/{videoFileName}")
 
-    clip = mp.VideoFileClip(f"{efsPath}/{videoFileName}")
-    clip.audio.write_audiofile(f"{efsPath}/{soundFileName}.mp3")
+    # clip = mp.VideoFileClip(f"{efsPath}/{videoFileName}")
+    # clip.audio.write_audiofile(f"{efsPath}/{soundFileName}.mp3")
+    subprocess.call(['ffmpeg', '-i', f"{efsPath}/{videoFileName}", '-vn', '-acodec', 'copy', f"{efsPath}/{soundFileName}.mp3"])
     with open(f"{efsPath}/{soundFileName}.mp3", 'rb') as f:
         data = f.read()
         s3.Object(audioOutputBucket, f"{soundFileName}.mp3").put(Body=data, Metadata={'languagecode': language_code,

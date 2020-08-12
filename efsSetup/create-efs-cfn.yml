@@ -1,6 +1,33 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Create EFS.
+Description: Create VPC, subnets and EFS.
 Resources:
+  MountTargetVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 172.31.0.0/16
+      EnableDnsHostnames: True
+      EnableDnsSupport: True
+
+  MountTargetSubnetOne:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 172.31.1.0/24
+      VpcId: !Ref MountTargetVPC
+      AvailabilityZone: "eu-west-1a"
+
+  MountTargetSubnetTwo:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 172.31.2.0/24
+      VpcId: !Ref MountTargetVPC
+      AvailabilityZone: "eu-west-1b"
+
+  MountTargetSubnetThree:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 172.31.3.0/24
+      VpcId: !Ref MountTargetVPC
+      AvailabilityZone: "eu-west-1c"
 
   FileSystemResource:
     Type: 'AWS::EFS::FileSystem'
@@ -9,7 +36,9 @@ Resources:
       Encrypted: true
       FileSystemTags:
         - Key: Name
-          Value: TestFileSystem
+          Value: serverless-transcription-efs
+        - Key: Project
+          Value: serverless-transcription
       FileSystemPolicy:
         Version: "2012-10-17"
         Statement:

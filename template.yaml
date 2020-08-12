@@ -18,6 +18,14 @@ Parameters:
   AccessPointARN:
     Type: String
     Description: Access point ARN
+    Default: arn:aws:elasticfilesystem:eu-west-1:282230486176:access-point/fsap-0ac1c6e3350bb461c
+  SecurityGroupIds:
+    Type: CommaDelimitedList
+    Default: sg-05652aceeea3de3a1
+  SubnetIDs:
+    Type: CommaDelimitedList
+    Description: The list of SubnetIDs in your Virtual Private Cloud (VPC)
+    Default: subnet-03225fb0acde6ca62,subnet-04a0d0122666266a1,subnet-0f3219b7659dc7653
 
 Globals:
   Function:
@@ -103,12 +111,17 @@ Resources:
         Variables:
           AUDIO_OUTPUT_BUCKET: !Ref MediaS3Bucket
           EFS_FILEPATH: !Ref EFSpath
+      Layers:
+        - arn:aws:lambda:eu-west-1:282230486176:layer:ffmpeg:2
       Events:
         FileUpload:
           Type: S3
           Properties:
             Bucket: !Ref VideoS3Bucket
             Events: s3:ObjectCreated:*
+      VpcConfig:
+        SecurityGroupIds: !Ref SecurityGroupIds
+        SubnetIds: !Ref SubnetIDs
       FileSystemConfigs:
         - Arn: !Ref AccessPointARN
           LocalMountPath: !Ref EFSpath
@@ -117,14 +130,30 @@ Resources:
             BucketName: !Ref InputBucketName
         - S3CrudPolicy:
             BucketName: !Ref InputVideoBucketName
-        - Sid: AmazonElasticFileSystemClientFullAccess
-          Effect: Allow
-          Action:
-            - elasticfilesystem:ClientMount
-            - elasticfilesystem:ClientRootAccess
-            - elasticfilesystem:ClientWrite
-            - elasticfilesystem:DescribeMountTargets
-          Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Resource: '*'
+              Action:
+                - cloudwatch:GetMetricStatistics
+                - cloudwatch:ListMetrics
+            - Sid: AWSLambdaVPCAccessExecutionRole
+              Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+                - ec2:CreateNetworkInterface
+                - ec2:DescribeNetworkInterfaces
+                - ec2:DeleteNetworkInterface
+              Resource: "*"
+            - Sid: AmazonElasticFileSystemClientFullAccess
+              Effect: Allow
+              Action:
+                - elasticfilesystem:ClientMount
+                - elasticfilesystem:ClientRootAccess
+                - elasticfilesystem:ClientWrite
+                - elasticfilesystem:DescribeMountTargets
+              Resource: "*"
 
 Outputs: 
   S3OutputBucketName:
