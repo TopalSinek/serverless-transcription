@@ -13,6 +13,7 @@ requests = "*"
 boto3 = "*"
 urllib3 = "*"
 uuid = "*"
+moviepy = "*"
 
 [requires]
 python_version = "3.7"

@@ -6,9 +6,18 @@ Parameters:
   InputBucketName:
     Type: String
     Default: 'ai-transcribe-media-bucket'
+  InputVideoBucketName:
+    Type: String
+    Default: 'ai-transcribe-video-bucket'
   TranscriptionBucketName:
     Type: String
     Default: 'ai-transcribe-transcription-bucket'
+  EFSpath:
+    Type: String
+    Default: /mnt/efs
+  AccessPointARN:
+    Type: String
+    Description: Access point ARN
 
 Globals:
   Function:
@@ -31,6 +40,17 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref InputBucketName
+      LifecycleConfiguration:
+        Rules:
+          - ExpirationInDays: 1
+            Status: Enabled
+      Tags:
+        - Key: Project
+          Value: serverless-transcription
+  VideoS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref InputVideoBucketName
       LifecycleConfiguration:
         Rules:
           - ExpirationInDays: 1
@@ -70,6 +90,41 @@ Resources:
           Properties:
             Bucket: !Ref MediaS3Bucket
             Events: s3:ObjectCreated:*
+
+  TranscoderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: transcoderFunction/
+      Timeout: 300
+      MemorySize: 3008
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.7
+      Environment:
+        Variables:
+          AUDIO_OUTPUT_BUCKET: !Ref MediaS3Bucket
+          EFS_FILEPATH: !Ref EFSpath
+      Events:
+        FileUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref VideoS3Bucket
+            Events: s3:ObjectCreated:*
+      FileSystemConfigs:
+        - Arn: !Ref AccessPointARN
+          LocalMountPath: !Ref EFSpath
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref InputBucketName
+        - S3CrudPolicy:
+            BucketName: !Ref InputVideoBucketName
+        - Sid: AmazonElasticFileSystemClientFullAccess
+          Effect: Allow
+          Action:
+            - elasticfilesystem:ClientMount
+            - elasticfilesystem:ClientRootAccess
+            - elasticfilesystem:ClientWrite
+            - elasticfilesystem:DescribeMountTargets
+          Resource: "*"
 
 Outputs: 
   S3OutputBucketName:

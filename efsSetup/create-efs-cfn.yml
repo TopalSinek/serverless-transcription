@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create EFS.
+Resources:
+
+  FileSystemResource:
+    Type: 'AWS::EFS::FileSystem'
+    Properties:
+      PerformanceMode: maxIO
+      Encrypted: true
+      FileSystemTags:
+        - Key: Name
+          Value: TestFileSystem
+      FileSystemPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "elasticfilesystem:ClientMount"
+            Principal:
+              AWS: "*"
+
+  MountTargetResource1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SubnetId: !Ref MountTargetSubnetOne
+      SecurityGroups:
+      - !GetAtt MountTargetVPC.DefaultSecurityGroup
+
+  MountTargetResource2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SubnetId: !Ref MountTargetSubnetTwo
+      SecurityGroups:
+      - !GetAtt MountTargetVPC.DefaultSecurityGroup
+
+  MountTargetResource3:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SubnetId: !Ref MountTargetSubnetThree
+      SecurityGroups:
+      - !GetAtt MountTargetVPC.DefaultSecurityGroup
+ 
+  AccessPointResource:
+    Type: 'AWS::EFS::AccessPoint'
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      PosixUser:
+        Uid: "1000"
+        Gid: "1000"
+      RootDirectory:
+        CreationInfo:
+          OwnerGid: "1000"
+          OwnerUid: "1000"
+          Permissions: "0777"
+        Path: "/myefs"
