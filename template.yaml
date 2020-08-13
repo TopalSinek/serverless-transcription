@@ -162,3 +162,6 @@ Outputs:
   S3InputBucketName:
     Description: Media S3 bucket
     Value: !Ref MediaS3Bucket
+  S3InputVideoBucketName:
+    Description: Video S3 bucket
+    Value: !Ref VideoS3Bucket
